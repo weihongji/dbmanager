@@ -15,7 +15,7 @@ public class ManagerTest {
 
 	@Test
 	public void getConnection() {
-		Manager manager = new Manager();
+		Manager manager = new Manager(getConnector());
 		Connection conn = null;
 		try {
 			conn = manager.getConnection();
@@ -36,36 +36,13 @@ public class ManagerTest {
 
 	@Test
 	public void status() {
-		Manager manager = new Manager();
+		Manager manager = new Manager(new Connector());
 		assertEquals("No connection in the pool.", manager.status());
 	}
 
-//	@Test
-//	public void status1() throws SQLException, TimeoutException, ClassNotFoundException, InterruptedException {
-//		Manager manager = new Manager();
-//		manager.setMinCount(6);
-//		Connection conn = manager.getConnection();
-//		Thread.sleep(1000);
-//		conn.close();
-//		Thread.sleep(1000);
-//		Connection c1 = manager.getConnection();
-//		Thread.sleep(1000);
-//		Connection c2 = manager.getConnection();
-//		Thread.sleep(1000);
-//		c1.close();
-//		Thread.sleep(1000);
-//		manager.getConnection();
-//		Thread.sleep(1000);
-//		manager.getConnection();
-//
-//		Thread.sleep(1000);
-//		manager.getConnection();
-//		assertEquals("No connection in the pool.", manager.status());
-//	}
-
 	@Test
 	public void thread() throws InterruptedException {
-		Manager manager = new Manager();
+		Manager manager = new Manager(getConnector());
 		manager.setMaxCount(3);
 		manager.setMaxWaitForConnection(2);
 		manager.setRetireAfterIdle(4);
@@ -107,9 +84,27 @@ public class ManagerTest {
 		}
 	}
 
+	private Connector getConnector() {
+		String driver, url, user, pwd;
+
+		driver = "com.mysql.cj.jdbc.Driver";
+		url = "jdbc:mysql://localhost:3306/test?serverTimezone=UTC&useLegacyDatetimeCode=false";
+		user = "root";
+		pwd = "@ctive123";
+
+		/*
+		driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+		url = "jdbc:sqlserver://localhost:1433;DatabaseName=Test";
+		user = "recware";
+		pwd = "safari";
+		*/
+
+		return new Connector(driver, url, user, pwd);
+	}
+
 	private class MyThread implements Runnable {
-		private Manager manager;
-		private int timeToKeep;
+		private final Manager manager;
+		private final int timeToKeep;
 
 		public MyThread(Manager manager, int timeToKeep) {
 			this.manager = manager;

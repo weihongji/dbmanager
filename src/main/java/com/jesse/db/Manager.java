@@ -12,27 +12,29 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
+@SuppressWarnings("BusyWait")
 public class Manager implements Runnable, AutoCloseable {
-	private List<PooledConnection> list = new ArrayList<>();
+	private final Connector connector;
+	private final List<PooledConnection> list = new ArrayList<>();
 
 	private int minCount = 1;
 	private int maxCount = 10;
 	private int maxWaitForConnection = 5; // in minutes
 	private int retireAfterIdle = 30; // in minutes
 
-	private Thread cleanupProcess;
+	private final Thread cleanupProcess;
 	private boolean isStopThread = false;
 	private LocalDateTime lastRunTime;
 
-	private Logger logger;
+	private final Logger logger = Logger.getLogger(this.getClass().getName());
 
-	public Manager() {
-		this(1);
+	public Manager(Connector connector) {
+		this(connector, 1);
 	}
 
-	public Manager(int minCount) {
+	public Manager(Connector connector, int minCount) {
+		this.connector = connector;
 		this.setMinCount(minCount);
-		this.logger = Logger.getLogger(this.getClass().getName());
 		this.cleanupProcess = new Thread(this);
 		this.cleanupProcess.start();
 	}
@@ -86,23 +88,8 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	private Connection getSqlConnection() throws ClassNotFoundException, SQLException {
-		Connection conn;
-		String driver, url, user, pwd;
-
-		driver = "com.mysql.cj.jdbc.Driver";
-		url = "jdbc:mysql://localhost:3306/test?serverTimezone=UTC&useLegacyDatetimeCode=false";
-		user = "root";
-		pwd = "@ctive123";
-
-		/*
-		driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-		url = "jdbc:sqlserver://localhost:1433;DatabaseName=Test";
-		user = "recware";
-		pwd = "safari";
-		*/
-
-		Class.forName(driver);
-		conn = DriverManager.getConnection(url, user, pwd);
+		Class.forName(connector.getDriver());
+		Connection conn = DriverManager.getConnection(connector.getUrl(), connector.getUser(), connector.getPassword());
 		if (conn == null) {
 			throw new NullPointerException("Connection is null");
 		}
