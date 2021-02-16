@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @SuppressWarnings("BusyWait")
@@ -37,6 +38,7 @@ public class Manager implements Runnable, AutoCloseable {
 		this.setMinCount(minCount);
 		this.cleanupProcess = new Thread(this);
 		this.cleanupProcess.start();
+		this.logger.setLevel(Level.WARNING);
 	}
 
 	public Connection getConnection() throws TimeoutException, SQLException, ClassNotFoundException {
@@ -74,7 +76,7 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	// Initialize the pool with min number of connections
-	private void initialize() {
+	private synchronized void initialize() {
 		int count = this.minCount - this.list.size();
 		for (int i = 0; i < count; i++) {
 			Connection sqlcn;
@@ -216,7 +218,7 @@ public class Manager implements Runnable, AutoCloseable {
 			}
 		}
 
-		logger.info("Connection cleanup process started");
+		logger.info("Connection cleanup process stopped");
 	}
 
 	public int getMinCount() {

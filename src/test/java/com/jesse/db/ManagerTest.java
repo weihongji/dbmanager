@@ -32,12 +32,14 @@ public class ManagerTest {
 				}
 			}
 		}
+		manager.close();
 	}
 
 	@Test
 	public void status() {
 		Manager manager = new Manager(new Connector());
 		assertEquals("No connection in the pool.", manager.status());
+		manager.close();
 	}
 
 	@Test
@@ -46,15 +48,26 @@ public class ManagerTest {
 		manager.setMaxCount(3);
 		manager.setMaxWaitForConnection(2);
 		manager.setRetireAfterIdle(4);
+
+		try {
+			// Initialize the pool before normal test. This job costs much time than others below.
+			// To keep good order, we need to do this separately.
+			Connection c = manager.getConnection();
+			c.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		Thread.sleep(1000);
+
 		List<Thread> list = new ArrayList<>();
+		Thread t;
 		for (int i = 1; i <= 3; i++) {
-			Thread t = new Thread(new MyThread(manager, i), "Thread #" + i);
+			t = new Thread(new MyThread(manager, i), "Thread #" + i);
 			list.add(t);
 			t.start();
 			Thread.sleep(1000);
 		}
-		Thread t = new Thread(new MyThread(manager, 4), "Thread #" + 4);
+		t = new Thread(new MyThread(manager, 4), "Thread #" + 4);
 		list.add(t);
 		t.start();
 		Thread.sleep(1000);
@@ -82,6 +95,9 @@ public class ManagerTest {
 		for (Thread t1 : list) {
 			t1.join();
 		}
+
+		manager.close();
+		System.out.println("Thread test done!");
 	}
 
 	private Connector getConnector() {
@@ -121,6 +137,7 @@ public class ManagerTest {
 				c.close();
 				System.out.println(Thread.currentThread().getName() + " closed connection.");
 			} catch (Exception e) {
+				System.out.println(Thread.currentThread().getName() + " Failed to get a connection.");
 				e.printStackTrace();
 			} finally {
 				System.out.println(Thread.currentThread().getName() + " exiting.");
