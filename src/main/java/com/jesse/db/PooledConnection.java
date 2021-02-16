@@ -78,7 +78,7 @@ public class PooledConnection implements Connection {
 			timeText += ", last used: " + this.lastUsedTime.format(DateTimeFormatter.ofPattern(pattern));
 		}
 
-		return String.format("%s, %s, usage: %d", status, timeText, this.usedCount);
+		return String.format("%s, %s, usage: %d", status, timeText, this.getUsedCount());
 	}
 
 	@Override

@@ -1,6 +1,5 @@
 package com.jesse.db;
 
-import java.security.InvalidParameterException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -41,15 +40,15 @@ public class Manager implements Runnable, AutoCloseable {
 	public Connection getConnection() throws TimeoutException, SQLException, ClassNotFoundException {
 		initialize();
 
-		PooledConnection result = null;
 		Instant start = Instant.now();
-		while (result == null) {
+		while (true) {
 			synchronized (this.list) {
 				// Get a connection from pool
 				for (PooledConnection conn : this.list) {
 					if (conn.isClosed() && !conn.isRealClosed()) {
-						conn.assign();
-						return conn;
+						if (conn.assign()) {
+							return conn;
+						}
 					}
 				}
 
@@ -60,8 +59,8 @@ public class Manager implements Runnable, AutoCloseable {
 				}
 			}
 
-			if (Duration.between(start, Instant.now()).toMinutes() >= this.maxWaitForConnection) {
-				break;
+			if (Duration.between(start, Instant.now()).toMinutes() >= this.getMaxWaitForConnection()) {
+				throw new TimeoutException(String.format("Cannot get an available connection within %d minutes.", this.getMaxWaitForConnection()));
 			}
 
 			try {
@@ -70,8 +69,6 @@ public class Manager implements Runnable, AutoCloseable {
 				e.printStackTrace();
 			}
 		}
-
-		throw new TimeoutException("Cannot get an available connection.");
 	}
 
 	// Initialize the pool with min number of connections
@@ -88,36 +85,22 @@ public class Manager implements Runnable, AutoCloseable {
 		}
 	}
 
-	private Connection getSqlConnection() throws SQLException, ClassNotFoundException {
-		return getSqlConnection(null);
-	}
-
-	private Connection getSqlConnection(String dbserver) throws ClassNotFoundException, SQLException {
-		final String MYSQL = "mysql";
-		final String SQLSERVER = "SQLServer";
-
-		if (dbserver == null || dbserver.trim().length() == 0) {
-			dbserver = MYSQL;
-		}
-
+	private Connection getSqlConnection() throws ClassNotFoundException, SQLException {
 		Connection conn;
 		String driver, url, user, pwd;
 
-		if (dbserver.equals(MYSQL)) {
-			driver = "com.mysql.cj.jdbc.Driver";
-			url = "jdbc:mysql://localhost:3306/test?serverTimezone=UTC&useLegacyDatetimeCode=false";
-			user = "root";
-			pwd = "@ctive123";
-		}
-		else if (dbserver.equals(SQLSERVER)) {
-			driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-			url = "jdbc:sqlserver://localhost:1433;DatabaseName=Test";
-			user = "recware";
-			pwd = "safari";
-		}
-		else {
-			throw new InvalidParameterException("Invalid db server type: " + (dbserver == null ? "null" : dbserver));
-		}
+		driver = "com.mysql.cj.jdbc.Driver";
+		url = "jdbc:mysql://localhost:3306/test?serverTimezone=UTC&useLegacyDatetimeCode=false";
+		user = "root";
+		pwd = "@ctive123";
+
+		/*
+		driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+		url = "jdbc:sqlserver://localhost:1433;DatabaseName=Test";
+		user = "recware";
+		pwd = "safari";
+		*/
+
 		Class.forName(driver);
 		conn = DriverManager.getConnection(url, user, pwd);
 		if (conn == null) {
@@ -272,11 +255,31 @@ public class Manager implements Runnable, AutoCloseable {
 		this.maxCount = count;
 	}
 
+	public int getMaxWaitForConnection() {
+		return maxWaitForConnection;
+	}
+
+	public void setMaxWaitForConnection(int maxWaitForConnection) {
+		this.maxWaitForConnection = maxWaitForConnection;
+	}
+
+	public int getRetireAfterIdle() {
+		return retireAfterIdle;
+	}
+
+	public void setRetireAfterIdle(int retireAfterIdle) {
+		this.retireAfterIdle = retireAfterIdle;
+	}
+
 	public boolean isStopThread() {
 		return isStopThread;
 	}
 
 	public void setStopThread(boolean stop) {
 		this.isStopThread = stop;
+	}
+
+	public int count() {
+		return this.list.size();
 	}
 }
