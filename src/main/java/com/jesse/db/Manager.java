@@ -18,8 +18,8 @@ public class Manager implements Runnable, AutoCloseable {
 	private final Connector connector;
 	private final List<PooledConnection> list = new ArrayList<>();
 
-	private int minCount = 1;
-	private int maxCount = 10;
+	private int minSize = 1;
+	private int maxSize = 10;
 	private int maxWaitForConnection = 5; // in minutes
 	private int retireAfterIdle = 30; // in minutes
 
@@ -33,9 +33,9 @@ public class Manager implements Runnable, AutoCloseable {
 		this(connector, 1);
 	}
 
-	public Manager(Connector connector, int minCount) {
+	public Manager(Connector connector, int minSize) {
 		this.connector = connector;
-		this.setMinCount(minCount);
+		this.setMinSize(minSize);
 		this.cleanupProcess = new Thread(this);
 		this.cleanupProcess.start();
 		this.logger.setLevel(Level.WARNING);
@@ -57,7 +57,7 @@ public class Manager implements Runnable, AutoCloseable {
 				}
 
 				// Create a new one
-				if (this.list.size() < this.maxCount) {
+				if (this.list.size() < this.maxSize) {
 					Connection sqlcn = getSqlConnection();
 					this.list.add(new PooledConnection(sqlcn));
 				}
@@ -77,7 +77,7 @@ public class Manager implements Runnable, AutoCloseable {
 
 	// Initialize the pool with min number of connections
 	private synchronized void initialize() {
-		int count = this.minCount - this.list.size();
+		int count = this.minSize - this.list.size();
 		for (int i = 0; i < count; i++) {
 			Connection sqlcn;
 			try {
@@ -120,7 +120,7 @@ public class Manager implements Runnable, AutoCloseable {
 		}
 	}
 
-	private String showList() {
+	public String showList() {
 		List<String> result = new ArrayList<>();
 		result.add("Connections in the pool:");
 		for (int i = 0; i < this.list.size(); i++) {
@@ -187,7 +187,7 @@ public class Manager implements Runnable, AutoCloseable {
 
 	// Connection cleanup process
 	// Remove connections that have not been used for a long time.
-	// It's allowed to remove connections to zero regardless the value of min count.
+	// It's allowed to remove connections to zero regardless the value of min size.
 	@Override
 	public void run() {
 		int interval = 60; // in seconds
@@ -204,7 +204,7 @@ public class Manager implements Runnable, AutoCloseable {
 						if (base == null) {
 							base = conn.getCreatedTime();
 						}
-						if (Duration.between(base, LocalDateTime.now()).toMinutes() >= this.retireAfterIdle) {
+						if (this.list.size() > this.minSize && Duration.between(base, LocalDateTime.now()).toMinutes() >= this.retireAfterIdle) {
 							conn.realClose();
 							this.list.remove(i);
 							logger.info("Connection removed: " + conn.toString());
@@ -221,27 +221,27 @@ public class Manager implements Runnable, AutoCloseable {
 		logger.info("Connection cleanup process stopped");
 	}
 
-	public int getMinCount() {
-		return minCount;
+	public int getMinSize() {
+		return minSize;
 	}
 
-	public void setMinCount(int count) {
-		if (count < 1 || count == this.minCount) return;
+	public void setMinSize(int size) {
+		if (size < 1 || size == this.minSize) return;
 
-		this.minCount = count;
-		if (this.minCount > this.maxCount) {
-			this.maxCount = this.minCount;
+		this.minSize = size;
+		if (this.minSize > this.maxSize) {
+			this.maxSize = this.minSize;
 		}
 	}
 
-	public int getMaxCount() {
-		return maxCount;
+	public int getMaxSize() {
+		return maxSize;
 	}
 
-	public void setMaxCount(int count) {
-		if (count < this.minCount || count == this.maxCount) return;
+	public void setMaxSize(int size) {
+		if (size < this.minSize || size == this.maxSize) return;
 
-		this.maxCount = count;
+		this.maxSize = size;
 	}
 
 	public int getMaxWaitForConnection() {
@@ -268,7 +268,7 @@ public class Manager implements Runnable, AutoCloseable {
 		this.isStopThread = stop;
 	}
 
-	public int count() {
+	public int size() {
 		return this.list.size();
 	}
 }

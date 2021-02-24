@@ -45,7 +45,7 @@ public class ManagerTest {
 	@Test
 	public void thread() throws InterruptedException {
 		Manager manager = new Manager(getConnector());
-		manager.setMaxCount(3);
+		manager.setMaxSize(3);
 		manager.setMaxWaitForConnection(2);
 		manager.setRetireAfterIdle(4);
 
@@ -86,7 +86,7 @@ public class ManagerTest {
 			System.out.println(String.format("\n--- #%02d (%s) ---------------------------------------------------", i, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"))));
 			System.out.println(manager.status());
 			System.out.println("--------------------------------------------------------------------------\n");
-			if (manager.count() == 0) {
+			if (manager.size() == 0) {
 				break;
 			}
 			Thread.sleep(30 * 1000);
