@@ -3,6 +3,7 @@ package com.jesse.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -17,12 +18,20 @@ import java.util.logging.Logger;
 public class Manager implements Runnable, AutoCloseable {
 	private final Connector connector;
 	private final List<PooledConnection> list = new ArrayList<>();
+	private int lastConnectionId = 0;
+	private final LocalDateTime dateStamp;
 
 	private int minSize = 1;
-	private int maxSize = 10;
-	private int maxWaitForConnection = 5; // in minutes
-	private int retireAfterIdle = 30; // in minutes
+	private int maxSize = 100;
+	private int maxWaitForConnection = 5; // Max time to wait for getting a connection if cannot get one immediately. (in minutes)
+	private int refreshToKeepAlive = 30; // Run a dummy query to keep communication with server if idle long enough. (in minutes)
+	private int retireAfterIdle = 30; // When number of connections exceeds the min size, connections idle long enough will be removed. (in minutes)
+	private int retireAfterStale = 10 * 24 * 60; // Max time when a connection can stay in pool. (in minutes)
+	private int timeoutMinute = 60; // Max time when a connection can keep in used. (in minutes)
+	private String dummyQuery = "select 1";
 
+	// Thread
+	private int interval = 5 * 60; // in seconds
 	private final Thread cleanupProcess;
 	private boolean isStopThread = false;
 	private LocalDateTime lastRunTime;
@@ -35,10 +44,12 @@ public class Manager implements Runnable, AutoCloseable {
 
 	public Manager(Connector connector, int minSize) {
 		this.connector = connector;
-		this.setMinSize(minSize);
-		this.cleanupProcess = new Thread(this);
-		this.cleanupProcess.start();
-		this.logger.setLevel(Level.WARNING);
+		setMinSize(minSize);
+		cleanupProcess = new Thread(this);
+		cleanupProcess.start();
+		Level level = Level.parse(PropertyUtil.getInstance().getProperty("loglevel", "INFO"));
+		logger.setLevel(level);
+		dateStamp = LocalDateTime.now();
 	}
 
 	public Connection getConnection() throws TimeoutException, SQLException, ClassNotFoundException {
@@ -46,9 +57,10 @@ public class Manager implements Runnable, AutoCloseable {
 
 		Instant start = Instant.now();
 		while (true) {
-			synchronized (this.list) {
-				// Get a connection from pool
-				for (PooledConnection conn : this.list) {
+			synchronized (list) {
+				// Get a connection from pool.
+				for (int i = list.size() - 1; i >= 0; i--) {
+					PooledConnection conn = list.get(i);
 					if (conn.isClosed() && !conn.isRealClosed()) {
 						if (conn.assign()) {
 							return conn;
@@ -57,14 +69,14 @@ public class Manager implements Runnable, AutoCloseable {
 				}
 
 				// Create a new one
-				if (this.list.size() < this.maxSize) {
+				if (list.size() < maxSize) {
 					Connection sqlcn = getSqlConnection();
-					this.list.add(new PooledConnection(sqlcn));
+					list.add(new PooledConnection(sqlcn, this));
 				}
 			}
 
-			if (Duration.between(start, Instant.now()).toMinutes() >= this.getMaxWaitForConnection()) {
-				throw new TimeoutException(String.format("Cannot get an available connection within %d minutes.", this.getMaxWaitForConnection()));
+			if (Duration.between(start, Instant.now()).toMinutes() >= getMaxWaitForConnection()) {
+				throw new TimeoutException(String.format("Cannot get an available connection within %d minutes.", getMaxWaitForConnection()));
 			}
 
 			try {
@@ -77,12 +89,12 @@ public class Manager implements Runnable, AutoCloseable {
 
 	// Initialize the pool with min number of connections
 	private synchronized void initialize() {
-		int count = this.minSize - this.list.size();
+		int count = minSize - list.size();
 		for (int i = 0; i < count; i++) {
 			Connection sqlcn;
 			try {
 				sqlcn = getSqlConnection();
-				this.list.add(new PooledConnection(sqlcn));
+				list.add(new PooledConnection(sqlcn, this));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -99,10 +111,10 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	public void close() {
-		this.clear();
-		this.setStopThread(true);
+		clear();
+		setStopThread(true);
 		try {
-			this.cleanupProcess.join();
+			cleanupProcess.join();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -110,34 +122,30 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	public void clear() {
-		for (int i = this.list.size() - 1; i >= 0; i--) {
-			try {
-				this.list.get(i).realClose();
-				this.list.remove(i);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+		for (int i = list.size() - 1; i >= 0; i--) {
+			list.get(i).safeRealClose();
+			list.remove(i);
 		}
 	}
 
-	public String showList() {
+	public String getListAsString() {
 		List<String> result = new ArrayList<>();
 		result.add("Connections in the pool:");
-		for (int i = 0; i < this.list.size(); i++) {
-			result.add(String.format("#%d: %s", i + 1, this.list.get(i).toString()));
+		for (PooledConnection pooledConnection : list) {
+			result.add(pooledConnection.toString());
 		}
 		return String.join("\r\n", result);
 	}
 
-	public String status() {
-		if (this.list.isEmpty()) {
+	public String getStatus() {
+		if (list.isEmpty()) {
 			return "No connection in the pool.";
 		}
-		else if (this.list.size() == 1) {
-			return "A single connection in the pool: " + this.list.get(0).toString();
+		else if (list.size() == 1) {
+			return "A single connection in the pool: " + list.get(0).toString();
 		}
-		else if (this.list.size() <= 10) {
-			return showList();
+		else if (list.size() <= 10) {
+			return getListAsString();
 		}
 
 		List<String> messages = new ArrayList<>();
@@ -146,7 +154,7 @@ public class Manager implements Runnable, AutoCloseable {
 		PooledConnection oldestUsed = null;
 		PooledConnection newestUsed = null;
 
-		for (PooledConnection conn : this.list) {
+		for (PooledConnection conn : list) {
 			if (conn.isClosed()) {
 				availableCount++;
 				lastAvailable = conn;
@@ -162,24 +170,24 @@ public class Manager implements Runnable, AutoCloseable {
 			}
 		}
 
-		messages.add(String.format("Available connections: %d of %d", availableCount, this.list.size()));
-		messages.add(String.format("The first: %s", this.list.get(0).toString()));
-		messages.add(String.format("The last : %s", this.list.get(this.list.size() - 1).toString()));
+		messages.add(String.format("Available connections: %d of %d", availableCount, list.size()));
+		messages.add(String.format("The first: %s", list.get(0).toString()));
+		messages.add(String.format("The last : %s", list.get(list.size() - 1).toString()));
 		if (lastAvailable != null) {
-			messages.add(String.format("The last available: (#%d) %s", this.list.indexOf(lastAvailable) + 1, lastAvailable.toString()));
+			messages.add(String.format("The last available: (#%d) %s", list.indexOf(lastAvailable) + 1, lastAvailable.toString()));
 		}
 		if (newestUsed != null) {
-			messages.add(String.format("The nearest used: (#%d) %s", this.list.indexOf(newestUsed) + 1, newestUsed.toString()));
+			messages.add(String.format("The nearest used: (#%d) %s", list.indexOf(newestUsed) + 1, newestUsed.toString()));
 		}
 		if (oldestUsed != null && oldestUsed.getLastUsedTime().isBefore(newestUsed.getLastUsedTime())) {
-			messages.add(String.format("The farthest used: (#%d) %s", this.list.indexOf(oldestUsed) + 1, oldestUsed.toString()));
+			messages.add(String.format("The farthest used: (#%d) %s", list.indexOf(oldestUsed) + 1, oldestUsed.toString()));
 		}
 
-		if (this.lastRunTime == null) {
+		if (lastRunTime == null) {
 			messages.add("No cleanup process is done yet.");
 		}
 		else {
-			messages.add("Cleanup process is done at " + this.lastRunTime.format(DateTimeFormatter.ofPattern("MMM d HH:mm:ss")));
+			messages.add("Cleanup process is done at " + lastRunTime.format(DateTimeFormatter.ofPattern("MMM d HH:mm:ss")));
 		}
 
 		return String.join("\r\n", messages);
@@ -187,38 +195,84 @@ public class Manager implements Runnable, AutoCloseable {
 
 	// Connection cleanup process
 	// Remove connections that have not been used for a long time.
-	// It's allowed to remove connections to zero regardless the value of min size.
 	@Override
 	public void run() {
-		int interval = 60; // in seconds
 		logger.info(String.format("Connection cleanup process started (interval = %d sec)", interval));
-
-		while (!this.isStopThread) {
+		long refreshInterval = 1000 * interval; // Time before next check on connection list
+		long sleepInterval = 1000; // Time before next check on loop control (variable isStopThread).
+		long elapsed = 0;
+		while (!isStopThread) {
 			try {
-				Thread.sleep(1000 * interval);
+				Thread.sleep(sleepInterval);
 
-				for (int i = this.list.size() - 1; i >= 0; i--) {
-					PooledConnection conn = this.list.get(i);
-					if (conn.isClosed()) {
-						LocalDateTime base = conn.getLastUsedTime();
-						if (base == null) {
-							base = conn.getCreatedTime();
-						}
-						if (this.list.size() > this.minSize && Duration.between(base, LocalDateTime.now()).toMinutes() >= this.retireAfterIdle) {
-							conn.realClose();
-							this.list.remove(i);
-							logger.info("Connection removed: " + conn.toString());
+				elapsed += sleepInterval;
+				if (elapsed < refreshInterval) {
+					continue;
+				}
+
+				// Health check
+				for (int i = 0; i < list.size(); i++) {
+					PooledConnection conn = list.get(i);
+					// Has been opened for too long time.
+					if (!conn.isClosed() && Duration.between(conn.getLastUsedTime(), LocalDateTime.now()).toMinutes() > timeoutMinute) {
+						conn.safeRealClose();
+						list.remove(i--);
+						logger.info("Removed connection due to timeout: " + conn.toString());
+						continue;
+					}
+					// Has been created for too long time.
+					if (conn.isClosed() && Duration.between(conn.getDateStamp(), LocalDateTime.now()).toMinutes() > retireAfterStale) {
+						conn.safeRealClose();
+						list.remove(i--);
+						logger.info("Removed connection due to stale: " + conn.toString());
+						continue;
+					}
+					// Refresh physical connection to keep alive
+					if (conn.getIdleTime().toMinutes() >= refreshToKeepAlive) {
+						if (!conn.isRealClosed()) {
+							try {
+								Statement stmt = conn.createStatement();
+								stmt.execute(dummyQuery);
+								logger.info("Refreshed connection: " + conn.toString());
+							} catch (Exception e) {
+								conn.safeRealClose();
+								list.remove(i--);
+								logger.info("Removed connection due to unavailable: " + conn.toString());
+								//continue; Need to uncomment this statement if any statement is added after it in this loop.
+							}
 						}
 					}
+				}
+
+				// Remove long idle connections if total number is larger than the min size.
+				for (int i = 0; i < list.size() && list.size() > minSize; i++) {
+					PooledConnection conn = list.get(i);
+					if (conn.isClosed()) {
+						if (conn.getIdleTime().toMinutes() >= retireAfterIdle) {
+							conn.safeRealClose();
+							list.remove(i);
+							logger.info("Removed connection due to long idle time: " + conn.toString());
+							//continue; Need to uncomment this statement if any statement is added after it in this loop.
+						}
+					}
+				}
+
+				// Add new connections in case we deleted too many.
+				if (list.size() < minSize) {
+					initialize();
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
-				this.lastRunTime = LocalDateTime.now();
+				lastRunTime = LocalDateTime.now();
 			}
 		}
 
 		logger.info("Connection cleanup process stopped");
+	}
+
+	public LocalDateTime getDateStamp() {
+		return dateStamp;
 	}
 
 	public int getMinSize() {
@@ -226,11 +280,11 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	public void setMinSize(int size) {
-		if (size < 1 || size == this.minSize) return;
-
-		this.minSize = size;
-		if (this.minSize > this.maxSize) {
-			this.maxSize = this.minSize;
+		if (size >= 1 && size != minSize) {
+			minSize = size;
+			if (minSize > maxSize) {
+				maxSize = minSize;
+			}
 		}
 	}
 
@@ -239,25 +293,61 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	public void setMaxSize(int size) {
-		if (size < this.minSize || size == this.maxSize) return;
-
-		this.maxSize = size;
+		if (size >= minSize && size != maxSize) {
+			maxSize = size;
+		}
 	}
 
 	public int getMaxWaitForConnection() {
 		return maxWaitForConnection;
 	}
 
-	public void setMaxWaitForConnection(int maxWaitForConnection) {
-		this.maxWaitForConnection = maxWaitForConnection;
+	public void setMaxWaitForConnection(int minutes) {
+		maxWaitForConnection = minutes;
+	}
+
+	public int getRefreshToKeepAlive() {
+		return refreshToKeepAlive;
+	}
+
+	public void setRefreshToKeepAlive(int minutes) {
+		refreshToKeepAlive = minutes;
 	}
 
 	public int getRetireAfterIdle() {
 		return retireAfterIdle;
 	}
 
-	public void setRetireAfterIdle(int retireAfterIdle) {
-		this.retireAfterIdle = retireAfterIdle;
+	public void setRetireAfterIdle(int minutes) {
+		retireAfterIdle = minutes;
+	}
+
+	public int getRetireAfterStale() {
+		return retireAfterStale;
+	}
+
+	public void setRetireAfterStale(int minutes) {
+		retireAfterStale = minutes;
+	}
+
+	public int getTimeoutMinute() {
+		return timeoutMinute;
+	}
+
+	public int setTimeoutMinute(int minutes) {
+		return timeoutMinute = minutes;
+	}
+
+	public String getDummyQuery() {
+		return dummyQuery;
+	}
+
+	public void setDummyQuery(String query) {
+		dummyQuery = query;
+	}
+
+	public int getRefreshInterval() {
+		return interval;
 	}
 
 	public boolean isStopThread() {
@@ -265,10 +355,14 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	public void setStopThread(boolean stop) {
-		this.isStopThread = stop;
+		isStopThread = stop;
 	}
 
-	public int size() {
-		return this.list.size();
+	public int getSize() {
+		return list.size();
+	}
+
+	public synchronized int getNextConnectionId() {
+		return ++lastConnectionId;
 	}
 }

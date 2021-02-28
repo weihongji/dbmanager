@@ -12,6 +12,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class ManagerTest {
+	PropertyUtil properties = PropertyUtil.getInstance();
 
 	@Test
 	public void getConnection() {
@@ -22,8 +23,7 @@ public class ManagerTest {
 			assertFalse(conn.isClosed());
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			if (conn != null) {
 				try {
 					conn.close();
@@ -38,16 +38,22 @@ public class ManagerTest {
 	@Test
 	public void status() {
 		Manager manager = new Manager(new Connector());
-		assertEquals("No connection in the pool.", manager.status());
+		assertEquals("No connection in the pool.", manager.getStatus());
 		manager.close();
 	}
 
 	@Test
 	public void thread() throws InterruptedException {
+		if (PropertyUtil.getInstance().getProperty("testThread", "true").equals("false")) {
+			return;
+		}
 		Manager manager = new Manager(getConnector());
 		manager.setMaxSize(3);
 		manager.setMaxWaitForConnection(2);
+		manager.setRefreshToKeepAlive(5);
 		manager.setRetireAfterIdle(4);
+		manager.setRetireAfterStale(6);
+		manager.setTimeoutMinute(1);
 
 		try {
 			// Initialize the pool before normal test. This job costs much time than others below.
@@ -82,11 +88,11 @@ public class ManagerTest {
 		t.start();
 		Thread.sleep(1000);
 
-		for (int i = 1; i <= 20; i++) {
+		for (int i = 1; i <= 18; i++) {
 			System.out.println(String.format("\n--- #%02d (%s) ---------------------------------------------------", i, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"))));
-			System.out.println(manager.status());
+			System.out.println(manager.getStatus());
 			System.out.println("--------------------------------------------------------------------------\n");
-			if (manager.size() == 0) {
+			if (manager.getSize() == 0) {
 				break;
 			}
 			Thread.sleep(30 * 1000);
@@ -101,20 +107,10 @@ public class ManagerTest {
 	}
 
 	private Connector getConnector() {
-		String driver, url, user, pwd;
-
-		driver = "com.mysql.cj.jdbc.Driver";
-		url = "jdbc:mysql://localhost:3306/test?serverTimezone=UTC&useLegacyDatetimeCode=false";
-		user = "root";
-		pwd = "@ctive123";
-
-		/*
-		driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-		url = "jdbc:sqlserver://localhost:1433;DatabaseName=Test";
-		user = "recware";
-		pwd = "safari";
-		*/
-
+		String driver = properties.getProperty("driver");
+		String url = properties.getProperty("url");
+		String user = properties.getProperty("user");
+		String pwd = properties.getProperty("pwd");
 		return new Connector(driver, url, user, pwd);
 	}
 
