@@ -44,15 +44,16 @@ public class ManagerTest {
 
 	@Test
 	public void thread() throws InterruptedException {
-		if (PropertyUtil.getInstance().getProperty("testThread", "true").equals("false")) {
+		if (PropertyUtil.getInstance().getProperty("test_thread", "true").equals("false")) {
 			return;
 		}
 		Manager manager = new Manager(getConnector());
+		manager.setMinSize(2);
 		manager.setMaxSize(3);
 		manager.setMaxWaitForConnection(2);
-		manager.setRefreshToKeepAlive(5);
-		manager.setRetireAfterIdle(4);
-		manager.setRetireAfterStale(6);
+		manager.setRefreshToKeepAlive(2);
+		manager.setRetireAfterIdle(3);
+		manager.setRetireAfterStale(4);
 		manager.setTimeoutMinute(1);
 
 		try {
@@ -88,8 +89,9 @@ public class ManagerTest {
 		t.start();
 		Thread.sleep(1000);
 
-		for (int i = 1; i <= 18; i++) {
-			System.out.println(String.format("\n--- #%02d (%s) ---------------------------------------------------", i, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"))));
+		int count = getMinutesToRun() * 2;
+		for (int i = 1; i <= count; i++) {
+			System.out.println(String.format("\n--- #%02d/%d (%s) ---------------------------------------------------", i, count, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"))));
 			System.out.println(manager.getStatus());
 			System.out.println("--------------------------------------------------------------------------\n");
 			if (manager.getSize() == 0) {
@@ -112,6 +114,16 @@ public class ManagerTest {
 		String user = properties.getProperty("user");
 		String pwd = properties.getProperty("pwd");
 		return new Connector(driver, url, user, pwd);
+	}
+
+	private int getMinutesToRun() {
+		int minutes = 10;
+		try {
+			String value = PropertyUtil.getInstance().getProperty("minutes_to_run", "10");
+			minutes = Integer.parseInt(value);
+		} catch (Exception e) {
+		}
+		return minutes;
 	}
 
 	private class MyThread implements Runnable {

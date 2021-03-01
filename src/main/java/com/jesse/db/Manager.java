@@ -47,7 +47,7 @@ public class Manager implements Runnable, AutoCloseable {
 		setMinSize(minSize);
 		cleanupProcess = new Thread(this);
 		cleanupProcess.start();
-		Level level = Level.parse(PropertyUtil.getInstance().getProperty("loglevel", "INFO"));
+		Level level = Level.parse(PropertyUtil.getInstance().getProperty("log_level", "INFO"));
 		logger.setLevel(level);
 		dateStamp = LocalDateTime.now();
 	}
@@ -231,13 +231,17 @@ public class Manager implements Runnable, AutoCloseable {
 					if (conn.getIdleTime().toMinutes() >= refreshToKeepAlive) {
 						if (!conn.isRealClosed()) {
 							try {
+								conn.assign();
 								Statement stmt = conn.createStatement();
 								stmt.execute(dummyQuery);
+								conn.close();
 								logger.info("Refreshed connection: " + conn.toString());
 							} catch (Exception e) {
+								String connString = conn.toString();
 								conn.safeRealClose();
 								list.remove(i--);
-								logger.info("Removed connection due to unavailable: " + conn.toString());
+								logger.info("Removed connection due to unavailable: " + connString);
+								logger.warning(e.getMessage());
 								//continue; Need to uncomment this statement if any statement is added after it in this loop.
 							}
 						}

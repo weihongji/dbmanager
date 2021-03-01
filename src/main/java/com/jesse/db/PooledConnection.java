@@ -76,7 +76,8 @@ public class PooledConnection implements Connection {
 			if (physicalConn != null) {
 				physicalConn.close();
 			}
-		} catch (Exception e) {}
+		} catch (Exception e) {
+		}
 	}
 
 	public boolean isRealClosed() throws SQLException {
