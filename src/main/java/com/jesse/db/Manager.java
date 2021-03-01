@@ -31,7 +31,7 @@ public class Manager implements Runnable, AutoCloseable {
 	private String dummyQuery = "select 1";
 
 	// Thread
-	private int interval = 5 * 60; // in seconds
+	private int refreshInterval = 60; // Time before next check on connection list. (in seconds). Value should be 1 ~ 60. If larger than 60, other settings above cannot work accurately in minutes.
 	private final Thread cleanupProcess;
 	private boolean keepRunning = true;
 	private LocalDateTime lastRunTime;
@@ -138,56 +138,70 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	public String getStatus() {
+		List<String> messages = new ArrayList<>();
+
+		// Connections
 		if (list.isEmpty()) {
-			return "No connection in the pool.";
+			messages.add("No connection in the pool.");
 		}
 		else if (list.size() == 1) {
-			return "A single connection in the pool: " + list.get(0).toString();
+			messages.add("A single connection in the pool: " + list.get(0).toString());
 		}
 		else if (list.size() <= 10) {
-			return getListAsString();
-		}
-
-		List<String> messages = new ArrayList<>();
-		int availableCount = 0;
-		PooledConnection lastAvailable = null;
-		PooledConnection oldestUsed = null;
-		PooledConnection newestUsed = null;
-
-		for (PooledConnection conn : list) {
-			if (conn.isClosed()) {
-				availableCount++;
-				lastAvailable = conn;
-			}
-
-			if (conn.getLastUsedTime() != null) {
-				if (oldestUsed == null || oldestUsed.getLastUsedTime().isAfter(conn.getLastUsedTime())) {
-					oldestUsed = conn;
-				}
-				if (newestUsed == null || newestUsed.getLastUsedTime().isBefore(conn.getLastUsedTime())) {
-					newestUsed = conn;
-				}
-			}
-		}
-
-		messages.add(String.format("Available connections: %d of %d", availableCount, list.size()));
-		messages.add(String.format("The first: %s", list.get(0).toString()));
-		messages.add(String.format("The last : %s", list.get(list.size() - 1).toString()));
-		if (lastAvailable != null) {
-			messages.add(String.format("The last available: (#%d) %s", list.indexOf(lastAvailable) + 1, lastAvailable.toString()));
-		}
-		if (newestUsed != null) {
-			messages.add(String.format("The nearest used: (#%d) %s", list.indexOf(newestUsed) + 1, newestUsed.toString()));
-		}
-		if (oldestUsed != null && oldestUsed.getLastUsedTime().isBefore(newestUsed.getLastUsedTime())) {
-			messages.add(String.format("The farthest used: (#%d) %s", list.indexOf(oldestUsed) + 1, oldestUsed.toString()));
-		}
-
-		if (lastRunTime == null) {
-			messages.add("No cleanup process is done yet.");
+			messages.add(getListAsString());
 		}
 		else {
-			messages.add("Cleanup process is done at " + lastRunTime.format(DateTimeFormatter.ofPattern("MMM d HH:mm:ss")));
+			int availableCount = 0;
+			PooledConnection lastAvailable = null;
+			PooledConnection oldestUsed = null;
+			PooledConnection newestUsed = null;
+
+			for (PooledConnection conn : list) {
+				if (conn.isClosed()) {
+					availableCount++;
+					lastAvailable = conn;
+				}
+
+				if (conn.getLastUsedTime() != null) {
+					if (oldestUsed == null || oldestUsed.getLastUsedTime().isAfter(conn.getLastUsedTime())) {
+						oldestUsed = conn;
+					}
+					if (newestUsed == null || newestUsed.getLastUsedTime().isBefore(conn.getLastUsedTime())) {
+						newestUsed = conn;
+					}
+				}
+			}
+
+			messages.add(String.format("Available connections: %d of %d", availableCount, list.size()));
+			messages.add(String.format("The first: %s", list.get(0).toString()));
+			messages.add(String.format("The last : %s", list.get(list.size() - 1).toString()));
+			if (lastAvailable != null) {
+				messages.add(String.format("The last available: (#%d) %s", list.indexOf(lastAvailable) + 1, lastAvailable.toString()));
+			}
+			if (newestUsed != null) {
+				messages.add(String.format("The nearest used: (#%d) %s", list.indexOf(newestUsed) + 1, newestUsed.toString()));
+			}
+			if (oldestUsed != null && oldestUsed.getLastUsedTime().isBefore(newestUsed.getLastUsedTime())) {
+				messages.add(String.format("The farthest used: (#%d) %s", list.indexOf(oldestUsed) + 1, oldestUsed.toString()));
+			}
+		}
+
+		messages.add("");
+
+		// Configurations
+		messages.add("Manager was created at " + dateStamp.format(DateTimeFormatter.ofPattern("MMM d, HH:mm:ss")));
+		messages.add(String.format("Min/Max size: %d/%d", minSize, maxSize));
+		messages.add(String.format("Request connection timeout: %d minutes", maxWaitForConnection));
+		messages.add(String.format("Engage connection max time: %d minutes", timeoutMinute));
+		messages.add(String.format("Clean up after idle: %d minutes", retireAfterIdle));
+		messages.add(String.format("Refresh to keep alive every: %d minutes", refreshToKeepAlive));
+		messages.add(String.format("Max life time: %d minutes", retireAfterStale));
+		messages.add(String.format("Refresh every: %d seconds", refreshInterval));
+		if (lastRunTime == null) {
+			messages.add("No cleanup process has started yet.");
+		}
+		else {
+			messages.add("Cleanup process was done at " + lastRunTime.format(DateTimeFormatter.ofPattern("MMM d, HH:mm:ss")));
 		}
 
 		return String.join("\r\n", messages);
@@ -197,16 +211,23 @@ public class Manager implements Runnable, AutoCloseable {
 	// Remove connections that have not been used for a long time.
 	@Override
 	public void run() {
-		logger.info(String.format("Connection cleanup process started (interval = %d sec)", interval));
-		long refreshInterval = 1000 * interval; // Time before next check on connection list
+		// Wait a bit before getting in the loop so that variables (e.g., refreshInterval) overridden by user codes can take effect.
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		logger.info(String.format("Connection cleanup process started (interval = %d sec)", refreshInterval));
 		long sleepInterval = 1000; // Time before next check on loop control (variable keepRunning).
+		long refreshIntervalMillis = 1000 * refreshInterval;
 		long elapsed = 0;
 		while (keepRunning) {
 			try {
 				Thread.sleep(sleepInterval);
 
 				elapsed += sleepInterval;
-				if (elapsed < refreshInterval) {
+				if (elapsed < refreshIntervalMillis) {
 					continue;
 				}
 
@@ -352,7 +373,11 @@ public class Manager implements Runnable, AutoCloseable {
 	}
 
 	public int getRefreshInterval() {
-		return interval;
+		return refreshInterval;
+	}
+
+	public void setRefreshInterval(int seconds) {
+		refreshInterval = seconds;
 	}
 
 	public boolean isKeepRunning() {

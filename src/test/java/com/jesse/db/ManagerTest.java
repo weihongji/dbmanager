@@ -38,7 +38,7 @@ public class ManagerTest {
 	@Test
 	public void status() {
 		Manager manager = new Manager(new Connector());
-		assertEquals("No connection in the pool.", manager.getStatus());
+		assertTrue(manager.getStatus().startsWith("No connection in the pool."));
 		manager.close();
 	}
 
@@ -51,6 +51,7 @@ public class ManagerTest {
 		manager.setMinSize(2);
 		manager.setMaxSize(3);
 		manager.setMaxWaitForConnection(2);
+		manager.setRefreshInterval(10);
 		manager.setRefreshToKeepAlive(2);
 		manager.setRetireAfterIdle(3);
 		manager.setRetireAfterStale(4);
@@ -105,7 +106,7 @@ public class ManagerTest {
 		}
 
 		manager.close();
-		System.out.println("Thread test done!");
+		System.out.println("\nThread test done!\n");
 	}
 
 	private Connector getConnector() {
