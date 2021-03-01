@@ -33,7 +33,7 @@ public class Manager implements Runnable, AutoCloseable {
 	// Thread
 	private int interval = 5 * 60; // in seconds
 	private final Thread cleanupProcess;
-	private boolean isStopThread = false;
+	private boolean keepRunning = true;
 	private LocalDateTime lastRunTime;
 
 	private final Logger logger = Logger.getLogger(this.getClass().getName());
@@ -112,7 +112,7 @@ public class Manager implements Runnable, AutoCloseable {
 
 	public void close() {
 		clear();
-		setStopThread(true);
+		setKeepRunning(false);
 		try {
 			cleanupProcess.join();
 		} catch (InterruptedException e) {
@@ -199,9 +199,9 @@ public class Manager implements Runnable, AutoCloseable {
 	public void run() {
 		logger.info(String.format("Connection cleanup process started (interval = %d sec)", interval));
 		long refreshInterval = 1000 * interval; // Time before next check on connection list
-		long sleepInterval = 1000; // Time before next check on loop control (variable isStopThread).
+		long sleepInterval = 1000; // Time before next check on loop control (variable keepRunning).
 		long elapsed = 0;
-		while (!isStopThread) {
+		while (keepRunning) {
 			try {
 				Thread.sleep(sleepInterval);
 
@@ -209,6 +209,9 @@ public class Manager implements Runnable, AutoCloseable {
 				if (elapsed < refreshInterval) {
 					continue;
 				}
+
+				elapsed = 0;
+				lastRunTime = LocalDateTime.now();
 
 				// Health check
 				for (int i = 0; i < list.size(); i++) {
@@ -267,8 +270,6 @@ public class Manager implements Runnable, AutoCloseable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-			} finally {
-				lastRunTime = LocalDateTime.now();
 			}
 		}
 
@@ -354,12 +355,16 @@ public class Manager implements Runnable, AutoCloseable {
 		return interval;
 	}
 
-	public boolean isStopThread() {
-		return isStopThread;
+	public boolean isKeepRunning() {
+		return keepRunning;
 	}
 
-	public void setStopThread(boolean stop) {
-		isStopThread = stop;
+	public void setKeepRunning(boolean run) {
+		keepRunning = run;
+	}
+
+	public LocalDateTime getHeartbeat() {
+		return lastRunTime;
 	}
 
 	public int getSize() {
