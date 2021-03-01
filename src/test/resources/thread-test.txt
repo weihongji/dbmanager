@@ -1,0 +1,480 @@
+﻿"C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\bin\java.exe" -ea -Didea.test.cyclic.buffer.size=1048576 "-javaagent:C:\Program Files\IntelliJ IDEA\lib\idea_rt.jar=49764:C:\Program Files\IntelliJ IDEA\bin" -Dfile.encoding=UTF-8 -classpath "C:\Program Files\IntelliJ IDEA\lib\idea_rt.jar;C:\Program Files\IntelliJ IDEA\plugins\junit\lib\junit5-rt.jar;C:\Program Files\IntelliJ IDEA\plugins\junit\lib\junit-rt.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\charsets.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\access-bridge-64.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\cldrdata.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\dnsns.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\jaccess.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\localedata.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\nashorn.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\sunec.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\sunjce_provider.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\sunmscapi.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\sunpkcs11.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\ext\zipfs.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\jce.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\jsse.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\management-agent.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\resources.jar;C:\Program Files\AdoptOpenJDK\jdk-8.0.202.08\jre\lib\rt.jar;C:\Users\jwei\Projects\dbmanager\target\test-classes;C:\Users\jwei\Projects\dbmanager\target\classes;C:\Users\jwei\.m2\repository\junit\junit\4.8.2\junit-4.8.2.jar;C:\Users\jwei\.m2\repository\mysql\mysql-connector-java\8.0.23\mysql-connector-java-8.0.23.jar;C:\Users\jwei\.m2\repository\com\google\protobuf\protobuf-java\3.11.4\protobuf-java-3.11.4.jar;C:\Users\jwei\.m2\repository\com\microsoft\sqlserver\mssql-jdbc\8.4.0.jre8\mssql-jdbc-8.4.0.jre8.jar" com.intellij.rt.junit.JUnitStarter -ideVersion5 -junit4 com.jesse.db.ManagerTest
+Mar 01, 2021 11:17:04 PM com.jesse.db.Manager run
+INFO: Connection cleanup process started (interval = 60 sec)
+Mar 01, 2021 11:17:05 PM com.jesse.db.Manager run
+INFO: Connection cleanup process stopped
+Mar 01, 2021 11:17:05 PM com.jesse.db.Manager run
+INFO: Connection cleanup process started (interval = 60 sec)
+Mar 01, 2021 11:17:07 PM com.jesse.db.Manager run
+INFO: Connection cleanup process stopped
+Mar 01, 2021 11:17:08 PM com.jesse.db.Manager run
+INFO: Connection cleanup process started (interval = 10 sec)
+Thread #1 starting.
+Thread #1 got connection.
+Thread #2 starting.
+Thread #2 got connection.
+Thread #3 starting.
+Thread #3 got connection.
+Thread #4 starting.
+Thread #5 starting.
+Thread #6 starting.
+
+--- #01/24 (23:17:15.050) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:17:10, usage: 1
+#2: Engaged, created at: 23:17:08, last used: 23:17:09, usage: 2
+#3: Engaged, created at: 23:17:11, last used: 23:17:11, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+No cleanup process has started yet.
+--------------------------------------------------------------------------
+
+
+--- #02/24 (23:17:45.051) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:17:10, usage: 1
+#2: Engaged, created at: 23:17:08, last used: 23:17:09, usage: 2
+#3: Engaged, created at: 23:17:11, last used: 23:17:11, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:17:38
+--------------------------------------------------------------------------
+
+Thread #1 closed connection.
+Thread #1 exiting.
+Thread #4 got connection.
+
+--- #03/24 (23:18:15.052) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:17:10, usage: 1
+#2: Engaged, created at: 23:17:08, last used: 23:18:09, usage: 3
+#3: Engaged, created at: 23:17:11, last used: 23:17:11, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:18:08
+--------------------------------------------------------------------------
+
+
+--- #04/24 (23:18:45.055) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:17:10, usage: 1
+#2: Engaged, created at: 23:17:08, last used: 23:18:09, usage: 3
+#3: Engaged, created at: 23:17:11, last used: 23:17:11, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:18:38
+--------------------------------------------------------------------------
+
+Thread #2 closed connection.
+Thread #2 exiting.
+Thread #6 got connection.
+Thread #5 Failed to get a connection.
+java.util.concurrent.TimeoutException: Cannot get an available connection within 2 minutes.
+	at com.jesse.db.Manager.getConnection(Manager.java:79)
+	at com.jesse.db.ManagerTest$MyThread.run(ManagerTest.java:143)
+	at java.lang.Thread.run(Thread.java:748)
+Thread #5 exiting.
+
+--- #05/24 (23:19:15.055) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:19:10, usage: 2
+#2: Engaged, created at: 23:17:08, last used: 23:18:09, usage: 3
+#3: Engaged, created at: 23:17:11, last used: 23:17:11, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:19:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:19:18 PM com.jesse.db.Manager run
+INFO: Removed connection due to timeout: #3: Closed, created at: 23:17:11, last used: 23:17:11, usage: 1
+
+--- #06/24 (23:19:45.060) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:19:10, usage: 2
+#2: Engaged, created at: 23:17:08, last used: 23:18:09, usage: 3
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:19:38
+--------------------------------------------------------------------------
+
+Thread #3 closed connection.
+Thread #3 exiting.
+
+--- #07/24 (23:20:15.063) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:19:10, usage: 2
+#2: Engaged, created at: 23:17:08, last used: 23:18:09, usage: 3
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:20:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:20:18 PM com.jesse.db.Manager run
+INFO: Removed connection due to timeout: #2: Closed, created at: 23:17:08, last used: 23:18:09, usage: 3
+
+--- #08/24 (23:20:45.066) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:19:10, usage: 2
+#4: Available, created at: 23:20:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:20:38
+--------------------------------------------------------------------------
+
+
+--- #09/24 (23:21:15.066) ---------------------------------------------------
+Connections in the pool:
+#1: Engaged, created at: 23:17:08, last used: 23:19:10, usage: 2
+#4: Available, created at: 23:20:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:21:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:21:18 PM com.jesse.db.Manager run
+INFO: Removed connection due to timeout: #1: Closed, created at: 23:17:08, last used: 23:19:10, usage: 2
+
+--- #10/24 (23:21:45.068) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, usage: 0
+#5: Available, created at: 23:21:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:21:38
+--------------------------------------------------------------------------
+
+Thread #4 closed connection.
+Thread #4 exiting.
+Thread #6 closed connection.
+Thread #6 exiting.
+
+--- #11/24 (23:22:15.069) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, usage: 0
+#5: Available, created at: 23:21:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:22:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:22:18 PM com.jesse.db.Manager run
+INFO: Refreshed connection: #4: Available, created at: 23:20:18, last used: 23:22:18, usage: 1
+
+--- #12/24 (23:22:45.070) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, last used: 23:22:18, usage: 1
+#5: Available, created at: 23:21:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:22:38
+--------------------------------------------------------------------------
+
+
+--- #13/24 (23:23:15.071) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, last used: 23:22:18, usage: 1
+#5: Available, created at: 23:21:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:23:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:23:18 PM com.jesse.db.Manager run
+INFO: Refreshed connection: #5: Available, created at: 23:21:18, last used: 23:23:18, usage: 1
+
+--- #14/24 (23:23:45.072) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, last used: 23:22:18, usage: 1
+#5: Available, created at: 23:21:18, last used: 23:23:18, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:23:38
+--------------------------------------------------------------------------
+
+
+--- #15/24 (23:24:15.074) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, last used: 23:22:18, usage: 1
+#5: Available, created at: 23:21:18, last used: 23:23:18, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:24:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:24:18 PM com.jesse.db.Manager run
+INFO: Refreshed connection: #4: Available, created at: 23:20:18, last used: 23:24:18, usage: 2
+
+--- #16/24 (23:24:45.075) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, last used: 23:24:18, usage: 2
+#5: Available, created at: 23:21:18, last used: 23:23:18, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:24:38
+--------------------------------------------------------------------------
+
+
+--- #17/24 (23:25:15.077) ---------------------------------------------------
+Connections in the pool:
+#4: Available, created at: 23:20:18, last used: 23:24:18, usage: 2
+#5: Available, created at: 23:21:18, last used: 23:23:18, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:25:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:25:18 PM com.jesse.db.Manager run
+INFO: Removed connection due to stale: #4: Closed, created at: 23:20:18, last used: 23:24:18, usage: 2
+Mar 01, 2021 11:25:18 PM com.jesse.db.Manager run
+INFO: Refreshed connection: #5: Available, created at: 23:21:18, last used: 23:25:18, usage: 2
+
+--- #18/24 (23:25:45.080) ---------------------------------------------------
+Connections in the pool:
+#5: Available, created at: 23:21:18, last used: 23:25:18, usage: 2
+#6: Available, created at: 23:25:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:25:38
+--------------------------------------------------------------------------
+
+
+--- #19/24 (23:26:15.080) ---------------------------------------------------
+Connections in the pool:
+#5: Available, created at: 23:21:18, last used: 23:25:18, usage: 2
+#6: Available, created at: 23:25:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:26:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:26:18 PM com.jesse.db.Manager run
+INFO: Removed connection due to stale: #5: Closed, created at: 23:21:18, last used: 23:25:18, usage: 2
+
+--- #20/24 (23:26:45.082) ---------------------------------------------------
+Connections in the pool:
+#6: Available, created at: 23:25:18, usage: 0
+#7: Available, created at: 23:26:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:26:38
+--------------------------------------------------------------------------
+
+
+--- #21/24 (23:27:15.083) ---------------------------------------------------
+Connections in the pool:
+#6: Available, created at: 23:25:18, usage: 0
+#7: Available, created at: 23:26:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:27:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:27:18 PM com.jesse.db.Manager run
+INFO: Refreshed connection: #6: Available, created at: 23:25:18, last used: 23:27:18, usage: 1
+
+--- #22/24 (23:27:45.084) ---------------------------------------------------
+Connections in the pool:
+#6: Available, created at: 23:25:18, last used: 23:27:18, usage: 1
+#7: Available, created at: 23:26:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:27:38
+--------------------------------------------------------------------------
+
+
+--- #23/24 (23:28:15.085) ---------------------------------------------------
+Connections in the pool:
+#6: Available, created at: 23:25:18, last used: 23:27:18, usage: 1
+#7: Available, created at: 23:26:18, usage: 0
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:28:08
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:28:18 PM com.jesse.db.Manager run
+INFO: Refreshed connection: #7: Available, created at: 23:26:18, last used: 23:28:18, usage: 1
+
+--- #24/24 (23:28:45.086) ---------------------------------------------------
+Connections in the pool:
+#6: Available, created at: 23:25:18, last used: 23:27:18, usage: 1
+#7: Available, created at: 23:26:18, last used: 23:28:18, usage: 1
+
+Manager was created at Mar 1, 23:17:07
+Min/Max size: 2/3
+Request connection timeout: 2 minutes
+Engage connection max time: 1 minutes
+Clean up after idle: 3 minutes
+Refresh to keep alive every: 2 minutes
+Max life time: 4 minutes
+Refresh every: 10 seconds
+Cleanup process was done at Mar 1, 23:28:38
+--------------------------------------------------------------------------
+
+Mar 01, 2021 11:29:15 PM com.jesse.db.Manager run
+
+Thread test done!
+INFO: Connection cleanup process stopped
+
+
+Process finished with exit code 0
