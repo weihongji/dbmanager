@@ -141,7 +141,7 @@ public class Manager implements Runnable, AutoCloseable {
 		for (PooledConnection pooledConnection : list) {
 			result.add(pooledConnection.toString());
 		}
-		return String.join("\r\n", result);
+		return String.join(System.lineSeparator(), result);
 	}
 
 	public String getStatus() {
@@ -211,7 +211,7 @@ public class Manager implements Runnable, AutoCloseable {
 			messages.add("Cleanup process was done at " + lastRunTime.format(DateTimeFormatter.ofPattern("MMM d, HH:mm:ss")));
 		}
 
-		return String.join("\r\n", messages);
+		return String.join(System.lineSeparator(), messages);
 	}
 
 	// Connection cleanup process
