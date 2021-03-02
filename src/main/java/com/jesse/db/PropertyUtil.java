@@ -39,6 +39,19 @@ public class PropertyUtil {
 		return properties.getProperty(key, defaultValue);
 	}
 
+	public int getPropertyInt(String key, int defaultValue) {
+		String setting = properties.getProperty(key);
+		if (setting == null) {
+			return defaultValue;
+		}
+		try {
+			int value = Integer.parseInt(setting.trim());
+			return value;
+		} catch (Exception e) {
+			return defaultValue;
+		}
+	}
+
 	public Set<String> getPropertyNames() {
 		return properties.stringPropertyNames();
 	}

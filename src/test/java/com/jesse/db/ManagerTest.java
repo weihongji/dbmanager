@@ -38,6 +38,7 @@ public class ManagerTest {
 	@Test
 	public void status() {
 		Manager manager = new Manager(new Connector());
+		System.out.println(manager.getStatus());
 		assertTrue(manager.getStatus().startsWith("No connection in the pool."));
 		manager.close();
 	}
@@ -48,14 +49,16 @@ public class ManagerTest {
 			return;
 		}
 		Manager manager = new Manager(getConnector());
-		manager.setMinSize(2);
-		manager.setMaxSize(3);
-		manager.setMaxWaitForConnection(2);
-		manager.setRefreshInterval(10);
-		manager.setRefreshToKeepAlive(2);
-		manager.setRetireAfterIdle(3);
-		manager.setRetireAfterStale(4);
-		manager.setTimeoutMinute(1);
+
+		//Comment out below since we are using settings in application.properties
+//		manager.setMinSize(2);
+//		manager.setMaxSize(3);
+//		manager.setMaxWaitForConnection(2);
+//		manager.setTimeoutMinute(1);
+//		manager.setRetireAfterIdle(3);
+//		manager.setRefreshToKeepAlive(2);
+//		manager.setRetireAfterStale(4);
+//		manager.setRefreshInterval(10);
 
 		try {
 			// Initialize the pool before normal test. This job costs much time than others below.

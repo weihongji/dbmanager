@@ -21,17 +21,18 @@ public class Manager implements Runnable, AutoCloseable {
 	private int lastConnectionId = 0;
 	private final LocalDateTime dateStamp;
 
-	private int minSize = 1;
-	private int maxSize = 100;
-	private int maxWaitForConnection = 5; // Max time to wait for getting a connection if cannot get one immediately. (in minutes)
-	private int refreshToKeepAlive = 30; // Run a dummy query to keep communication with server if idle long enough. (in minutes)
-	private int retireAfterIdle = 30; // When number of connections exceeds the min size, connections idle long enough will be removed. (in minutes)
-	private int retireAfterStale = 10 * 24 * 60; // Max time when a connection can stay in pool. (in minutes)
-	private int timeoutMinute = 60; // Max time when a connection can keep in used. (in minutes)
+	private int minSize;
+	private int maxSize;
+	private int maxWaitForConnection; // Max time to wait for getting a connection if cannot get one immediately. (in minutes)
+	private int timeoutMinute; // Max time when a connection can keep in used. (in minutes)
+	private int retireAfterIdle; // When number of connections exceeds the min size, connections idle long enough will be removed. (in minutes)
+	private int refreshToKeepAlive; // Run a dummy query to keep communication with server if idle long enough. (in minutes)
+	private int retireAfterStale; // Max time when a connection can stay in pool. (in minutes)
+	private int refreshInterval; // Time before next check on connection list. (in seconds).
+								 // This time should not be larger than any of time setting above. In other words, the value should be 1 ~ 60.
+								 // Otherwise, settings above cannot work accurately in minutes.
 	private String dummyQuery = "select 1";
 
-	// Thread
-	private int refreshInterval = 60; // Time before next check on connection list. (in seconds). Value should be 1 ~ 60. If larger than 60, other settings above cannot work accurately in minutes.
 	private final Thread cleanupProcess;
 	private boolean keepRunning = true;
 	private LocalDateTime lastRunTime;
@@ -39,17 +40,23 @@ public class Manager implements Runnable, AutoCloseable {
 	private final Logger logger = Logger.getLogger(this.getClass().getName());
 
 	public Manager(Connector connector) {
-		this(connector, 1);
-	}
-
-	public Manager(Connector connector, int minSize) {
 		this.connector = connector;
-		setMinSize(minSize);
+		dateStamp = LocalDateTime.now();
+
+		PropertyUtil properties = PropertyUtil.getInstance();
+		minSize = properties.getPropertyInt("dbcm.minSize", 1);
+		maxSize = properties.getPropertyInt("dbcm.maxSize", 100);
+		maxWaitForConnection = properties.getPropertyInt("dbcm.maxWaitForConnection", 5);
+		timeoutMinute = properties.getPropertyInt("dbcm.timeoutMinute", 60);
+		retireAfterIdle = properties.getPropertyInt("dbcm.retireAfterIdle", 30);
+		refreshToKeepAlive = properties.getPropertyInt("dbcm.refreshToKeepAlive", 30);
+		retireAfterStale = properties.getPropertyInt("dbcm.retireAfterStale", 10 * 24 * 60); // 10 days
+		refreshInterval = properties.getPropertyInt("dbcm.refreshInterval",60); // in seconds. Value should be 1 ~ 60.
+
+		logger.setLevel(Level.parse(properties.getProperty("dbcm.logLevel", "INFO")));
+
 		cleanupProcess = new Thread(this);
 		cleanupProcess.start();
-		Level level = Level.parse(PropertyUtil.getInstance().getProperty("log_level", "INFO"));
-		logger.setLevel(level);
-		dateStamp = LocalDateTime.now();
 	}
 
 	public Connection getConnection() throws TimeoutException, SQLException, ClassNotFoundException {
@@ -198,7 +205,7 @@ public class Manager implements Runnable, AutoCloseable {
 		messages.add(String.format("Max life time: %d minutes", retireAfterStale));
 		messages.add(String.format("Refresh every: %d seconds", refreshInterval));
 		if (lastRunTime == null) {
-			messages.add("No cleanup process has started yet.");
+			messages.add("Cleanup process has not started yet.");
 		}
 		else {
 			messages.add("Cleanup process was done at " + lastRunTime.format(DateTimeFormatter.ofPattern("MMM d, HH:mm:ss")));
