@@ -18,7 +18,12 @@ public class PropertyUtil {
 			propertyPath = path.normalize().toString();
 			InputStream stream = new FileInputStream(propertyPath);
 			properties.load(stream);
-		} catch (IOException | URISyntaxException e) {
+		}
+		catch (FileNotFoundException e) {
+			System.out.println(e.getMessage());
+			System.out.println("Default settings will be used.");
+		}
+		catch (IOException | URISyntaxException e) {
 			e.printStackTrace();
 		}
 	}
