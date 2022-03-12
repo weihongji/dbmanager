@@ -1,0 +1,6 @@
+Run command below to install the jar to local Maven repository:
+
+D:\git\dbmanager\bin>mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=dbmanager.jar
+
+Jesse
+21:07 2022/3/12
